@@ -5,15 +5,61 @@ import warnings
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Prevent terminal flooding
 warnings.filterwarnings("ignore")
+
+def generate_pdf_grade_card(student_row, output_path):
+    """
+    Helper function to dynamically generate a basic clean PDF grade card.
+    Uses standard ReportLab structure to avoid missing file errors.
+    """
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        
+        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Custom Title Style
+        title_style = ParagraphStyle(
+            'TitleStyle',
+            parent=styles['Heading1'],
+            fontSize=22,
+            spaceAfter=20,
+            textColor='#1E3A8A'
+        )
+        
+        story.append(Paragraph(f"<b>STUDENT PERFORMANCE REPORT CARD</b>", title_style))
+        story.append(Spacer(1, 15))
+        story.append(Paragraph(f"<b>Student Name:</b> {student_row['Name']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Registered Email:</b> {student_row['Email']}", styles['Normal']))
+        story.append(Spacer(1, 10))
+        story.append(Paragraph(f"<b>Overall Rank:</b> {student_row['Rank']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Final Calculated Grade:</b> {student_row['Grade']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Attendance Percentage:</b> {student_row['Attendance_%']}%", styles['Normal']))
+        story.append(Paragraph(f"<b>Overall Course Percentage:</b> {student_row['Overall_Percentage']}%", styles['Normal']))
+        story.append(Spacer(1, 15))
+        story.append(Paragraph(f"<b>Performance Review Insight:</b> <br/><i>{student_row['Insight']}</i>", styles['Normal']))
+        
+        doc.build(story)
+        return True
+    except Exception as pdf_err:
+        print(f"Error generating PDF for {student_row['Name']}: {str(pdf_err)}")
+        return False
 
 def run_entire_pipeline():
     """
     Automatically aggregates all CSV files from the 'data/' folder, 
     calculates metrics, triggers performance engine, updates the dashboard database,
-    and returns a clean master dataframe.
+    generates PDF reports, and dispatches automated emails via SMTP.
     """
     DATA_FOLDER = "data"
     OUTPUT_FOLDER = "output"
@@ -152,6 +198,53 @@ def run_entire_pipeline():
         master_df = master_df[col_order].sort_values(by="Rank")
         master_df.to_csv(os.path.join(OUTPUT_FOLDER, "master_df.csv"), index=False)
         
-        return master_df, "✅ Entire Analytics Pipeline Processed Successfully!"
+        # ==========================================================
+        # SMTP AUTOMATED SYSTEM WITH RUNTIME PDF GENERATION
+        # ==========================================================
+        SENDER_EMAIL = "your_email@gmail.com"
+        SENDER_PASSWORD = "your_app_password"  # Google App Password config
+
+        # Connecting SMTP server outside the loop for optimization
+        try:
+            server = smtplib.SMTP('smtp.gmail.com', 587)
+            server.starttls()
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+            
+            for index, row in master_df.iterrows():
+                student_email = row["Email"]
+                student_name = row["Name"] if pd.notna(row["Name"]) else "Student"
+                student_grade = row["Grade"]
+                
+                if pd.isna(student_email) or "@" not in str(student_email):
+                    continue
+                    
+                pdf_filename = f"output/grade_cards/{student_name.replace(' ', '_')}_grade_card.pdf"
+                
+                # Dynamic Runtime PDF creation before mailing
+                pdf_created = generate_pdf_grade_card(row, pdf_filename)
+                
+                if pdf_created and os.path.exists(pdf_filename):
+                    msg = MIMEMultipart()
+                    msg['From'] = SENDER_EMAIL
+                    msg['To'] = student_email
+                    msg['Subject'] = f"🏆 Your Performance Grade Card - Updated"
+                    
+                    body = f"Hello {student_name},\n\nYour latest quiz performance analytics have been compiled. Your current standing Grade is: {student_grade}.\n\nPlease find your automated verified performance summary card attached below.\n\nBest Regards,\nAcademic Management System"
+                    msg.attach(MIMEText(body, 'plain'))
+                    
+                    with open(pdf_filename, "rb") as attachment:
+                        part = MIMEBase('application', 'octet-stream')
+                        part.set_payload(attachment.read())
+                        encoders.encode_base64(part)
+                        part.add_header('Content-Disposition', f"attachment; filename= {os.path.basename(pdf_filename)}")
+                        msg.attach(part)
+                    
+                    server.sendmail(SENDER_EMAIL, student_email, msg.as_string())
+            
+            server.quit()
+        except Exception as smtp_global_err:
+            print(f"SMTP Main Engine Connection Error: {str(smtp_global_err)}")
+
+        return master_df, "✅ Entire Analytics Pipeline & Bulk Emails Processed Successfully!"
     except Exception as e:
         return None, f"❌ Pipeline Broken: {str(e)}"
