@@ -1,8 +1,0 @@
-watchdog>=4.0.0
-reportlab
-qrcode
-pandas
-numpy
-matplotlib
-plotly
-streamlit
