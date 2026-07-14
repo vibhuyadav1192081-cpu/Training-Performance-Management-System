@@ -263,20 +263,4 @@ Lloyd Institute of Engineering & Technology<br>
 </p>
 </center>
 """, unsafe_allow_html=True)
-# ==========================================================
-# GLOBAL FOOTER (Always at the absolute bottom)
-# ==========================================================
-# ==========================================================
-# SYSTEM GLOBAL FOOTER (FIXED SYNTAX ERROR HERE)
-# ==========================================================
-st.markdown("---")
-st.markdown("""
-<center>
-<p style="color:#9CA3AF; font-size: 14px;">
-<b>Training Performance Management System v2.0</b><br>
-Developed by <b>Vivek Yadav with ❤️ & tea ☕</b><br>
-Lloyd Institute of Engineering & Technology<br>
-© 2026 All Rights Reserved
-</p>
-</center>
-""", unsafe_allow_html=True)
+
