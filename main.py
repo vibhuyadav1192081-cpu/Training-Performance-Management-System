@@ -201,8 +201,8 @@ def run_entire_pipeline():
         # ==========================================================
         # SMTP AUTOMATED SYSTEM WITH RUNTIME PDF GENERATION
         # ==========================================================
-        SENDER_EMAIL = "your_email@gmail.com"
-        SENDER_PASSWORD = "your_app_password"  # Google App Password config
+        SENDER_EMAIL = "vibhuyadav1192081@gmail.com"
+        SENDER_PASSWORD = "hpaj nzhp qwvw ksag"  # Google App Password config
 
         # Connecting SMTP server outside the loop for optimization
         try:
