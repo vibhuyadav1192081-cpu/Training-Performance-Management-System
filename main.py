@@ -16,43 +16,135 @@ warnings.filterwarnings("ignore")
 
 def generate_pdf_grade_card(student_row, output_path):
     """
-    Helper function to dynamically generate a basic clean PDF grade card.
-    Uses standard ReportLab structure to avoid missing file errors.
+    Highly customized dynamic PDF Report Card generator featuring an official college 
+    header architecture, evaluation summary grids, and structural signature elements.
     """
     try:
         from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
         
-        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        # Page Setup with exact corporate margins
+        doc = SimpleDocTemplate(
+            output_path, 
+            pagesize=letter,
+            rightMargin=40, leftMargin=40,
+            topMargin=40, bottomMargin=40
+        )
+        
         styles = getSampleStyleSheet()
         story = []
         
-        # Custom Title Style
-        title_style = ParagraphStyle(
-            'TitleStyle',
-            parent=styles['Heading1'],
-            fontSize=22,
-            spaceAfter=20,
-            textColor='#1E3A8A'
-        )
+        # Custom Typography & Color Schemes
+        PRIMARY_COLOR = colors.HexColor("#1E3A8A")  # Corporate Dark Navy Blue
+        SECONDARY_COLOR = colors.HexColor("#7F1D1D")  # Academic Crimson Maroon
+        TEXT_DARK = colors.HexColor("#1F2937")
         
-        story.append(Paragraph(f"<b>STUDENT PERFORMANCE REPORT CARD</b>", title_style))
-        story.append(Spacer(1, 15))
-        story.append(Paragraph(f"<b>Student Name:</b> {student_row['Name']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Registered Email:</b> {student_row['Email']}", styles['Normal']))
-        story.append(Spacer(1, 10))
-        story.append(Paragraph(f"<b>Overall Rank:</b> {student_row['Rank']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Final Calculated Grade:</b> {student_row['Grade']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Attendance Percentage:</b> {student_row['Attendance_%']}%", styles['Normal']))
-        story.append(Paragraph(f"<b>Overall Course Percentage:</b> {student_row['Overall_Percentage']}%", styles['Normal']))
-        story.append(Spacer(1, 15))
-        story.append(Paragraph(f"<b>Performance Review Insight:</b> <br/><i>{student_row['Insight']}</i>", styles['Normal']))
+        # Custom Paragraph Styling Setup
+        style_inst_name = ParagraphStyle('InstName', parent=styles['Heading1'], fontSize=20, leading=24, textColor=PRIMARY_COLOR, alignment=1, spaceAfter=2)
+        style_inst_sub = ParagraphStyle('InstSub', parent=styles['Normal'], fontSize=10, leading=12, textColor=colors.HexColor("#4B5563"), alignment=1, spaceAfter=15)
+        style_report_title = ParagraphStyle('RepTitle', parent=styles['Heading2'], fontSize=14, leading=18, textColor=SECONDARY_COLOR, alignment=1, spaceAfter=20)
+        style_normal_cell = ParagraphStyle('NormCell', parent=styles['Normal'], fontSize=10, leading=13, textColor=TEXT_DARK)
+        style_bold_cell = ParagraphStyle('BoldCell', parent=styles['Normal'], fontSize=10, leading=13, textColor=TEXT_DARK, fontName="Helvetica-Bold")
         
+        # 1. OFFICIAL ACADEMIC HEADER ARCHITECTURE (College Name & Affiliation)
+        story.append(Paragraph("<b>LLOYD INSTITUTE OF ENGINEERING & TECHNOLOGY</b>", style_inst_name))
+        story.append(Paragraph("Affiliated to APJ Abdul Kalam Technical University (AKTU) | Greater Noida, UP", style_inst_sub))
+        
+        # Design Separator Accent Line
+        header_line = Table([[""]], colWidths=[532], rowHeights=[3])
+        header_line.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), PRIMARY_COLOR),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(header_line)
+        story.append(Spacer(1, 15))
+        
+        # Document Sub-Heading
+        story.append(Paragraph("<b>AUTOMATED STUDENT PERFORMANCE REPORT CARD</b>", style_report_title))
+        
+        # 2. STUDENT INFORMATION PROFILE BLOCK (Clean Grid System)
+        info_data = [
+            [Paragraph("<b>Student Name:</b>", style_bold_cell), Paragraph(str(student_row['Name']), style_normal_cell),
+             Paragraph("<b>Academic Session:</b>", style_bold_cell), Paragraph(f"{datetime.now().year}-{datetime.now().year+1}", style_normal_cell)],
+            [Paragraph("<b>Registered Email:</b>", style_bold_cell), Paragraph(str(student_row['Email']), style_normal_cell),
+             Paragraph("<b>Evaluation Date:</b>", style_bold_cell), Paragraph(datetime.now().strftime("%d-%b-%Y"), style_normal_cell)]
+        ]
+        info_table = Table(info_data, colWidths=[110, 160, 110, 152])
+        info_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor("#E5E7EB")),
+        ]))
+        story.append(info_table)
+        story.append(Spacer(1, 25))
+        
+        # 3. CORE METRICS EVALUATION DATA GRID (Tabular Performance Sheet)
+        metrics_data = [
+            [Paragraph("<b>Performance Metric Indicator</b>", style_bold_cell), Paragraph("<b>Calculated Values / Status</b>", style_bold_cell)],
+            [Paragraph("Overall Course Percentage", style_normal_cell), Paragraph(f"{student_row['Overall_Percentage']}%", style_normal_cell)],
+            [Paragraph("Total Quizzes Attempted", style_normal_cell), Paragraph(str(student_row['Attempted_Quiz']), style_normal_cell)],
+            [Paragraph("Course Attendance Rate", style_normal_cell), Paragraph(f"{student_row['Attendance_%']}%", style_normal_cell)],
+            [Paragraph("Computed Performance Index Score", style_normal_cell), Paragraph(str(student_row['Performance_Score']), style_normal_cell)],
+            [Paragraph("<b>Final Derived Grade</b>", style_bold_cell), Paragraph(f"<b>{student_row['Grade']}</b>", style_bold_cell)],
+            [Paragraph("<b>Merit Position (Rank)</b>", style_bold_cell), Paragraph(f"<b>Rank #{student_row['Rank']}</b>", style_bold_cell)]
+        ]
+        metrics_table = Table(metrics_data, colWidths=[320, 212], rowHeights=[24]*7)
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F3F4F6")),
+            ('TEXTCOLOR', (0,0), (-1,0), PRIMARY_COLOR),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 12),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#D1D5DB")),
+            ('BACKGROUND', (0,5), (1,6), colors.HexColor("#FEF2F2")), # Highlight Grade/Rank row with light alert background
+        ]))
+        story.append(metrics_table)
+        story.append(Spacer(1, 25))
+        
+        # 4. COMPUTER GENERATED PERFORMANCE SYSTEM REVIEW BADGE
+        style_insight_heading = ParagraphStyle('InsHead', parent=styles['Normal'], fontSize=10, leading=12, fontName="Helvetica-Bold", textColor=PRIMARY_COLOR, spaceAfter=4)
+        style_insight_body = ParagraphStyle('InsBody', parent=styles['Normal'], fontSize=9, leading=13, fontName="Helvetica-Oblique", textColor=colors.HexColor("#374151"))
+        
+        insight_box_data = [[
+            Paragraph("<b>AUTOMATED PERFORMANCE ANALYSIS & METRIC REVIEW:</b>", style_insight_heading),
+            Paragraph(str(student_row['Insight']), style_insight_body)
+        ]]
+        insight_table = Table(insight_box_data, colWidths=[520])
+        insight_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F0F4F8")),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#BCCCDC")),
+            ('TOPPADDING', (0,0), (-1,-1), 10),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ('LEFTPADDING', (0,0), (-1,-1), 12),
+            ('RIGHTPADDING', (0,0), (-1,-1), 12),
+        ]))
+        story.append(insight_table)
+        story.append(Spacer(1, 45))
+        
+        # 5. CORPORATE LEGAL NOTICES & SIGNATURE VERIFICATION BLOCKS
+        sig_data = [
+            [Paragraph("<font color='#9CA3AF'>[System Verified Seal]</font>", style_normal_cell), Paragraph("___________________________", style_normal_cell)],
+            [Paragraph("<b>Evaluation Engine:</b> Autonomous Processing", style_normal_cell), Paragraph("<b>Authorized Signatory</b><br/>LIET Academic Controller Office", style_normal_cell)]
+        ]
+        sig_table = Table(sig_data, colWidths=[280, 252])
+        sig_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),
+            ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        story.append(sig_table)
+        
+        # Build Document Instance safely
         doc.build(story)
         return True
     except Exception as pdf_err:
-        print(f"Error generating PDF for {student_row['Name']}: {str(pdf_err)}")
+        print(f"Error generating customized dynamic PDF for {student_row.get('Name', 'Student')}: {str(pdf_err)}")
         return False
 
 def run_entire_pipeline():
@@ -64,7 +156,6 @@ def run_entire_pipeline():
     DATA_FOLDER = "data"
     OUTPUT_FOLDER = "output"
     
-    # Ensure standard structural directories exist
     os.makedirs(DATA_FOLDER, exist_ok=True)
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     os.makedirs(os.path.join(OUTPUT_FOLDER, "grade_cards"), exist_ok=True)
@@ -199,12 +290,11 @@ def run_entire_pipeline():
         master_df.to_csv(os.path.join(OUTPUT_FOLDER, "master_df.csv"), index=False)
         
         # ==========================================================
-        # SMTP AUTOMATED SYSTEM WITH RUNTIME PDF GENERATION
+        # SMTP AUTOMATED SYSTEM WITH UPGRADED PDF DISTRIBUTION
         # ==========================================================
         SENDER_EMAIL = "vibhuyadav1192081@gmail.com"
-        SENDER_PASSWORD = "hpaj nzhp qwvw ksag"  # Google App Password config
+        SENDER_PASSWORD = "tqof rmpq ehgl wtqq"
 
-        # Connecting SMTP server outside the loop for optimization
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
@@ -220,16 +310,16 @@ def run_entire_pipeline():
                     
                 pdf_filename = f"output/grade_cards/{student_name.replace(' ', '_')}_grade_card.pdf"
                 
-                # Dynamic Runtime PDF creation before mailing
+                # Triggers the brand new Dynamic College Grid Report Card
                 pdf_created = generate_pdf_grade_card(row, pdf_filename)
                 
                 if pdf_created and os.path.exists(pdf_filename):
                     msg = MIMEMultipart()
                     msg['From'] = SENDER_EMAIL
                     msg['To'] = student_email
-                    msg['Subject'] = f"🏆 Your Performance Grade Card - Updated"
+                    msg['Subject'] = f"🏆 Official Academic Performance Grade Card Updated - {student_name}"
                     
-                    body = f"Hello {student_name},\n\nYour latest quiz performance analytics have been compiled. Your current standing Grade is: {student_grade}.\n\nPlease find your automated verified performance summary card attached below.\n\nBest Regards,\nAcademic Management System"
+                    body = f"Dear {student_name},\n\nYour performance matrix has been updated by the autonomous system evaluation engine at Lloyd Institute.\n\nYour current calculated standing Grade is: {student_grade}.\n\nPlease find the official system-verified digital report card PDF file attached below.\n\nBest Regards,\nOffice of the Academic Controller\nLloyd Institute of Engineering & Technology"
                     msg.attach(MIMEText(body, 'plain'))
                     
                     with open(pdf_filename, "rb") as attachment:
