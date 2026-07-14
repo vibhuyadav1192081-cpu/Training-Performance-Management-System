@@ -1,9 +1,8 @@
-streamlit
-pandas
-numpy
-plotly
-matplotlib
+watchdog>=4.0.0
 reportlab
 qrcode
-Pillow
-openpyxl
+pandas
+numpy
+matplotlib
+plotly
+streamlit
