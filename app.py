@@ -266,6 +266,9 @@ Lloyd Institute of Engineering & Technology<br>
 # ==========================================================
 # GLOBAL FOOTER (Always at the absolute bottom)
 # ==========================================================
+# ==========================================================
+# SYSTEM GLOBAL FOOTER (FIXED SYNTAX ERROR HERE)
+# ==========================================================
 st.markdown("---")
 st.markdown("""
 <center>
@@ -276,3 +279,4 @@ Lloyd Institute of Engineering & Technology<br>
 © 2026 All Rights Reserved
 </p>
 </center>
+""", unsafe_allow_html=True)
